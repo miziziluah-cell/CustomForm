@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CustomForm</title>
+<meta name="description" content="Create, complete, import, and export reusable custom forms in your browser.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #f7f7fa; --panel: #ffffff; --ink: #1d1d21; --muted: #6f6f78;
+    --line: #dedee5; --blue: #1474e8; --blue-soft: #e9f2ff; --danger: #b42318;
+    --shadow: 0 5px 20px rgb(0 0 0 / .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper: #1e1e22; --panel: #2a2a2f; --ink: #f5f5f7; --muted: #aaaab3;
+            --line: #45454d; --blue: #5ba2ff; --blue-soft: #193c69; --danger: #ff8f88; --shadow: none; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; color: var(--ink); background: var(--paper); }
+  button, textarea, input { font: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: .48; }
+  #app { min-height: 100%; display: grid; grid-template-columns: 270px minmax(0, 1fr); }
+  aside { background: color-mix(in srgb, var(--panel) 92%, var(--paper)); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 100vh; }
+  .sidebar-heading { padding: 24px 18px 14px; font-size: 20px; font-weight: 720; letter-spacing: -.015em; }
+  #template-list { padding: 0 10px; overflow: auto; flex: 1; }
+  .sidebar-group { margin: 4px 0 12px; }
+  .sidebar-group-title { display: flex; align-items: center; gap: 5px; padding: 7px 10px 5px; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .055em; text-transform: uppercase; }
+  .sidebar-group-title .section-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .section-action { border: 0; border-radius: 4px; padding: 2px 4px; color: var(--muted); background: transparent; font-size: 13px; line-height: 1; }
+  .section-action:hover { color: var(--blue); background: var(--blue-soft); }
+  .template-row { width: 100%; border: 0; border-radius: 8px; color: var(--ink); background: transparent; display: flex; align-items: center; gap: 9px; padding: 10px; text-align: left; }
+  .sidebar-group .template-row { padding-left: 18px; }
+  .template-row:hover { background: color-mix(in srgb, var(--blue-soft) 55%, transparent); }
+  .template-row.selected { background: var(--blue-soft); color: var(--blue); font-weight: 650; }
+  .template-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .template-dot { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 100%; background: currentColor; }
+  .sidebar-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px; border-top: 1px solid var(--line); }
+  .sidebar-actions .full-width { grid-column: 1 / -1; }
+  .sidebar-actions label { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+  .sidebar-actions select { width: 100%; padding: 7px 8px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 7px; }
+  main { min-width: 0; }
+  .topbar { min-height: 72px; display: flex; gap: 16px; align-items: center; padding: 14px 26px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 94%, var(--paper)); }
+  .menu-button { display: none; min-width: 36px; min-height: 36px; padding: 6px; font-size: 19px; line-height: 1; }
+  .topbar h1 { margin: 0; min-width: 0; max-width: 43vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 21px; letter-spacing: -.02em; }
+  .spacer { flex: 1; }
+  .segmented { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); }
+  .segmented button { background: transparent; border: 0; color: var(--muted); border-radius: 6px; padding: 7px 12px; font-size: 13px; font-weight: 650; }
+  .segmented button.active { color: var(--ink); background: var(--panel); box-shadow: 0 1px 3px rgb(0 0 0 / .12); }
+  .button { border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); padding: 8px 11px; font-weight: 620; font-size: 13px; white-space: nowrap; }
+  .button:hover { filter: brightness(.98); border-color: color-mix(in srgb, var(--blue) 55%, var(--line)); }
+  .button.primary { color: white; background: var(--blue); border-color: var(--blue); }
+  .button.danger { color: var(--danger); }
+  .content { max-width: 920px; padding: 30px; }
+  .builder-toolbar { position: sticky; top: 0; z-index: 5; margin: -30px -30px 20px; padding: 24px 30px 20px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 12px 12px; background: color-mix(in srgb, var(--panel) 96%, var(--paper)); box-shadow: 0 9px 18px rgb(0 0 0 / .10); }
+  .builder-toolbar .form-section { margin-bottom: 18px; }
+  .form-section { margin-bottom: 25px; }
+  .section-title { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+  .section-title h2 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
+  .hint { margin: 7px 0 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+  .label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 670; }
+  .required { color: var(--danger); }
+  textarea { display: block; resize: none; width: 100%; min-height: 46px; overflow: hidden; padding: 9px 10px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 7px; line-height: 1.35; }
+  textarea:focus { outline: 3px solid color-mix(in srgb, var(--blue) 25%, transparent); border-color: var(--blue); }
+  #form-title { min-height: 45px; font-size: 16px; font-weight: 600; }
+  .element-card { padding: 17px; margin: 13px 0; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); box-shadow: var(--shadow); }
+  .element-card.dragging { opacity: .45; }
+  .element-card.drag-over { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .element-head { display: flex; gap: 12px; align-items: center; margin-bottom: 13px; }
+  .element-kind { font-weight: 710; font-size: 14px; }
+  .icon { color: var(--muted); width: 20px; text-align: center; }
+  .drag-handle { border: 0; border-radius: 5px; padding: 4px 6px; color: var(--muted); background: transparent; cursor: grab; font-size: 17px; line-height: 1; }
+  .drag-handle:active { cursor: grabbing; }
+  .drag-handle:hover { color: var(--blue); background: var(--blue-soft); }
+  .remove { margin-left: auto; border: 0; background: transparent; color: var(--danger); padding: 5px; }
+  .field-gap { margin-top: 13px; }
+  .validation { margin: 9px 0 0; color: var(--danger); font-size: 12px; }
+  .add-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .empty { padding: 50px 25px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); }
+  .empty strong { display: block; color: var(--ink); margin-bottom: 6px; }
+  .option-editor { display: grid; grid-template-columns: 1fr auto; gap: 9px; align-items: start; margin-bottom: 8px; }
+  .option-editor textarea { min-height: 42px; }
+  .small-icon { min-width: 34px; min-height: 36px; border: 1px solid var(--line); color: var(--danger); background: var(--panel); border-radius: 6px; }
+  .status { min-height: 20px; padding: 0 30px 20px; color: var(--muted); font-size: 13px; }
+  .status.error { color: var(--danger); }
+  .fill-card { padding: 17px 0; border-bottom: 1px solid var(--line); }
+  .fill-card.static { font-size: 16px; line-height: 1.5; white-space: pre-wrap; }
+  .form-break { border: 0; border-top: 2px solid var(--line); margin: 8px 0; }
+  .code-block { display: flex; align-items: stretch; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--panel) 82%, var(--paper)); }
+  .copy-code { align-self: flex-start; flex: 0 0 auto; }
+  .code-block pre { flex: 1; min-width: 0; margin: 0; overflow-x: auto; color: var(--ink); font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; white-space: pre-wrap; tab-size: 2; }
+  .builder-break { padding: 10px 0; color: var(--muted); text-align: center; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .break-settings { display: grid; grid-template-columns: minmax(110px, .55fr) minmax(150px, 1fr); gap: 12px; }
+  .break-setting input { width: 100%; padding: 8px 9px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 7px; }
+  .break-setting input:focus { outline: 3px solid color-mix(in srgb, var(--blue) 25%, transparent); border-color: var(--blue); }
+  .radio-option, .check-option, .export-option { display: flex; gap: 9px; align-items: flex-start; margin: 9px 0; line-height: 1.35; }
+  .radio-option input, .check-option input, .export-option input { margin-top: 3px; accent-color: var(--blue); }
+  .filler-actions { padding: 23px 0 5px; }
+  .top-clear-action { margin: -8px 0 8px; }
+  .action-row { display: flex; gap: 9px; margin-top: 13px; }
+  dialog { max-width: 510px; width: calc(100% - 40px); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 18px 60px rgb(0 0 0 / .25); padding: 0; }
+  dialog::backdrop { background: rgb(0 0 0 / .30); }
+  .dialog-content { padding: 24px; }
+  .dialog-content h2 { margin: 0 0 8px; font-size: 19px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 13px 20px; border-top: 1px solid var(--line); }
+  .hide { display: none !important; }
+  #sidebar-scrim { display: none; }
+  @media (max-width: 730px) {
+    #app { display: block; }
+    aside { position: fixed; inset: 0 auto 0 0; z-index: 20; width: min(320px, 88vw); min-height: 100dvh; max-height: none; border-right: 1px solid var(--line); border-bottom: 0; box-shadow: 12px 0 35px rgb(0 0 0 / .18); transform: translateX(-105%); transition: transform .2s ease; }
+    aside.mobile-open { transform: translateX(0); }
+    #sidebar-scrim { position: fixed; z-index: 10; inset: 0; border: 0; background: rgb(0 0 0 / .30); }
+    #sidebar-scrim.visible { display: block; }
+    .menu-button { display: inline-flex; align-items: center; justify-content: center; }
+    .sidebar-heading { padding: 16px 15px 9px; }
+    .sidebar-actions { padding: 11px; }
+    .topbar { min-height: 62px; padding: 12px 15px; gap: 10px; flex-wrap: nowrap; }
+    .topbar h1 { max-width: none; flex: 1; font-size: 18px; }
+    .topbar .spacer { display: none; }
+    .segmented { flex: 0 0 auto; }
+    .segmented button { padding: 6px 9px; }
+    .topbar > .button.primary, .topbar > #save-all-button, .topbar > #load-button { display: none; }
+    .content { padding: 20px 15px; }
+    .builder-toolbar { margin: -20px -15px 16px; padding: 18px 15px 16px; border-radius: 0 0 10px 10px; }
+  }
+</style>
+</head>
+<body>
+<button id="sidebar-scrim" type="button" aria-label="Close template menu"></button>
+<div id="app">
+  <aside>
+    <div class="sidebar-heading">Templates</div>
+    <div id="template-list" aria-label="Form templates"></div>
+    <div class="sidebar-actions">
+      <button class="button" id="new-template" type="button">＋ Template</button>
+      <button class="button" id="new-section" type="button">＋ Section</button>
+      <button class="button" id="rename-template" type="button">✎ Rename</button>
+      <button class="button danger" id="delete-template" type="button">⌫ Delete</button>
+      <label class="full-width" for="template-location">Selected template location</label>
+      <select id="template-location" class="full-width" aria-label="Selected template location"></select>
+      <button class="button full-width" id="move-template" type="button">Move Selected Template</button>
+    </div>
+  </aside>
+  <main>
+    <header class="topbar">
+      <button id="mobile-menu" class="button menu-button" type="button" aria-label="Open template menu" aria-expanded="false">☰</button>
+      <h1 id="workspace-title">Custom Form</h1>
+      <div class="spacer"></div>
+      <div class="segmented" aria-label="Mode">
+        <button id="build-mode" class="active" type="button">Build</button>
+        <button id="fill-mode" type="button">Fill Out</button>
+      </div>
+      <button id="save-button" class="button primary" type="button">Save</button>
+      <button id="save-all-button" class="button" type="button">Save All</button>
+      <button id="load-button" class="button" type="button">Load</button>
+      <button id="settings-button" class="button" type="button" aria-label="Settings">⚙︎</button>
+    </header>
+    <div id="workspace"></div>
+    <div id="status" class="status" aria-live="polite"></div>
+  </main>
+</div>
+
+<dialog id="settings-dialog">
+  <div class="dialog-content">
+    <h2>Settings</h2>
+    <p class="hint">Save templates to this Mac, export them as a shareable JSON file, or import JSON templates from another person.</p>
+    <div class="add-row" style="margin-top:20px">
+      <button id="settings-save" class="button primary" type="button">Save Templates on This Mac</button>
+      <button id="settings-export" class="button" type="button">Export Templates…</button>
+      <button id="settings-import" class="button" type="button">Import Templates…</button>
+      <input id="import-file" class="hide" type="file" accept="application/json,.json">
+    </div>
+  </div>
+  <div class="dialog-actions"><button id="settings-done" class="button" type="button">Done</button></div>
+</dialog>
+
+<script>
+(() => {
+  'use strict';
+  const STORAGE_KEY = 'custom-form.templates.v1';
+  const $ = (selector) => document.querySelector(selector);
+  const workspace = $('#workspace');
+  const statusEl = $('#status');
+  const sidebar = document.querySelector('aside');
+  const state = { templates: [], sections: [], selectedID: null, mode: 'build', responses: {}, includeLabels: true, dirty: false };
+  let draggingElementID = null;
+
+  function id() { return crypto.randomUUID ? crypto.randomUUID() : `form-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
+  function clean(value) { return String(value || '').trim(); }
+  function esc(value) { const d = document.createElement('div'); d.textContent = value || ''; return d.innerHTML; }
+  function selected() { return state.templates.find(t => t.id === state.selectedID); }
+  function defaultTemplate() { return { id: id(), title: `Untitled Form ${state.templates.length + 1}`, sectionID: null, elements: [], modifiedAt: new Date().toISOString() }; }
+  function defaultSection() { return { id: id(), title: `Untitled Section ${state.sections.length + 1}` }; }
+  function defaultElement(kind) {
+    if (kind === 'text') return { id: id(), kind, label: '', selectedOutput: '', options: [], exportStaticText: false, checkboxSpaceBelow: false, textFieldExportStyle: 'under', breakCharacter: '=', breakLength: 40, breakSpacing: 'none' };
+    if (kind === 'code') return { id: id(), kind, label: '', selectedOutput: '', options: [], exportStaticText: false, checkboxSpaceBelow: false, textFieldExportStyle: 'under', breakCharacter: '=', breakLength: 40, breakSpacing: 'none' };
+    if (kind === 'textField') return { id: id(), kind, label: '', selectedOutput: '', options: [], exportStaticText: false, checkboxSpaceBelow: false, textFieldExportStyle: 'under', textFieldPlaceholder: '', useTextFieldPlaceholder: false, breakCharacter: '=', breakLength: 40, breakSpacing: 'none' };
+    if (kind === 'checkbox') return { id: id(), kind, label: '', selectedOutput: '', options: [], exportStaticText: false, checkboxSpaceBelow: false, textFieldExportStyle: 'under', breakCharacter: '=', breakLength: 40, breakSpacing: 'none' };
+    if (kind === 'break') return { id: id(), kind, label: '', selectedOutput: '', options: [], exportStaticText: false, checkboxSpaceBelow: false, textFieldExportStyle: 'under', breakCharacter: '=', breakLength: 40, breakSpacing: 'none' };
+    return { id: id(), kind: 'radio', label: '', selectedOutput: '', options: [''], exportStaticText: false, checkboxSpaceBelow: false, textFieldExportStyle: 'under', breakCharacter: '=', breakLength: 40, breakSpacing: 'none' };
+  }
+  function showStatus(message, error = false) { statusEl.textContent = message; statusEl.classList.toggle('error', error); }
+  function markDirty() { state.dirty = true; }
+  function setMode(mode) { state.mode = mode; state.responses = {}; render(); }
+  function isMobileLayout() { return window.matchMedia('(max-width: 730px)').matches; }
+  function setMobileSidebar(open) {
+    sidebar.classList.toggle('mobile-open', open);
+    $('#sidebar-scrim').classList.toggle('visible', open);
+    $('#mobile-menu').setAttribute('aria-expanded', String(open));
+    $('#mobile-menu').setAttribute('aria-label', open ? 'Close template menu' : 'Open template menu');
+  }
+  function closeMobileSidebar() { if (isMobileLayout()) setMobileSidebar(false); }
+  function validTemplate(template) {
+    if (!clean(template.title)) return 'Give the form a name before saving.';
+    for (const element of template.elements) {
+      if (element.kind === 'checkbox' && (!clean(element.label) || !clean(element.selectedOutput))) return 'Every checkbox needs both a label and text to export when it is selected.';
+      if (element.kind === 'radio' && (!clean(element.label) || !element.options.some(clean))) return 'Every radio selection needs a label and at least one choice.';
+    }
+    return '';
+  }
+  function workspaceData() { return { schemaVersion: 2, sections: state.sections, templates: state.templates }; }
+  function persist() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaceData())); state.dirty = false; return true; }
+    catch (error) { showStatus(`Unable to save locally: ${error.message}`, true); return false; }
+  }
+  function load() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const decoded = decodeWorkspace(stored);
+      state.templates = decoded.templates;
+      state.sections = decoded.sections;
+    } catch (_) { state.templates = []; state.sections = []; }
+    state.selectedID = state.templates[0] ? state.templates[0].id : null;
+  }
+  function normalizedBreakCharacter(value) { const character = Array.from(String(value ?? '=')).at(0); return character === undefined ? '=' : character; }
+  function normalizedBreakLength(value) { const number = Number.parseInt(value, 10); return Number.isFinite(number) ? Math.max(1, Math.min(60, number)) : 40; }
+  function breakLine(element) { return normalizedBreakCharacter(element.breakCharacter).repeat(normalizedBreakLength(element.breakLength)); }
+  function normalizeTemplate(template) {
+    const allowedKinds = new Set(['text', 'code', 'textField', 'checkbox', 'radio', 'break']);
+    return { id: template.id || id(), title: String(template.title || 'Untitled Form'), sectionID: typeof template.sectionID === 'string' ? template.sectionID : null, elements: Array.isArray(template.elements) ? template.elements.map(e => ({ id: e.id || id(), kind: allowedKinds.has(e.kind) ? e.kind : 'text', label: ['Question or field label', 'Add your text here', 'Add code here', 'Radio selection label'].includes(e.label) ? '' : String(e.label || ''), selectedOutput: String(e.selectedOutput || ''), options: Array.isArray(e.options) ? e.options.map(option => ['First choice', 'New choice'].includes(option) ? '' : String(option)) : [], exportStaticText: Boolean(e.exportStaticText), checkboxSpaceBelow: Boolean(e.checkboxSpaceBelow), textFieldExportStyle: ['inline', 'inlineNoSpace'].includes(e.textFieldExportStyle) ? e.textFieldExportStyle : 'under', textFieldPlaceholder: String(e.textFieldPlaceholder || ''), useTextFieldPlaceholder: Boolean(e.useTextFieldPlaceholder), breakCharacter: normalizedBreakCharacter(e.breakCharacter), breakLength: normalizedBreakLength(e.breakLength), breakSpacing: ['above', 'below'].includes(e.breakSpacing) ? e.breakSpacing : 'none' })) : [], modifiedAt: template.modifiedAt || new Date().toISOString() };
+  }
+  function normalizeSection(section) { return { id: section?.id || id(), title: String(section?.title || 'Untitled Section') }; }
+  function decodeWorkspace(payload) {
+    // Version 1 exports were a bare template array. Keep those templates outside sections.
+    const source = Array.isArray(payload) ? { templates: payload, sections: [] } : payload;
+    if (!source || !Array.isArray(source.templates)) throw new Error('The file does not contain form templates.');
+    const sections = Array.isArray(source.sections) ? source.sections.map(normalizeSection) : [];
+    const sectionIDs = new Set(sections.map(section => section.id));
+    const templates = source.templates.map(normalizeTemplate);
+    templates.forEach(template => { if (!sectionIDs.has(template.sectionID)) template.sectionID = null; });
+    return { sections, templates };
+  }
+  function render() {
+    renderSidebar();
+    const template = selected();
+    $('#build-mode').classList.toggle('active', state.mode === 'build');
+    $('#fill-mode').classList.toggle('active', state.mode === 'fill');
+    $('#save-button').disabled = !template;
+    $('#workspace-title').textContent = template ? (clean(template.title) || 'Untitled Form') : 'Custom Form';
+    workspace.innerHTML = !template ? emptyWorkspace() : state.mode === 'build' ? buildWorkspace(template) : fillWorkspace(template);
+    bindWorkspace();
+  }
+  function renderSidebar() {
+    const validSectionIDs = new Set(state.sections.map(section => section.id));
+    const outside = state.templates.filter(template => !validSectionIDs.has(template.sectionID));
+    const outsideHTML = outside.length ? `<div class="sidebar-group"><div class="sidebar-group-title"><span class="section-name">Outside Sections</span></div>${outside.map(templateRow).join('')}</div>` : '';
+    const sectionsHTML = state.sections.map(section => {
+      const templates = state.templates.filter(template => template.sectionID === section.id);
+      return `<div class="sidebar-group"><div class="sidebar-group-title"><span class="section-name">${esc(clean(section.title) || 'Untitled Section')}</span><button class="section-action" data-rename-section="${section.id}" type="button" title="Rename section">✎</button><button class="section-action" data-delete-section="${section.id}" type="button" title="Delete section">⌫</button></div>${templates.map(templateRow).join('')}</div>`;
+    }).join('');
+    $('#template-list').innerHTML = (state.templates.length || state.sections.length) ? `${outsideHTML}${sectionsHTML}` : '<div class="empty" style="margin:0 5px"><strong>No templates or sections</strong>Add a template or section to begin.</div>';
+    document.querySelectorAll('[data-template]').forEach(button => button.addEventListener('click', () => { state.selectedID = button.dataset.template; state.responses = {}; render(); closeMobileSidebar(); }));
+    document.querySelectorAll('[data-rename-section]').forEach(button => button.addEventListener('click', () => renameSection(button.dataset.renameSection)));
+    document.querySelectorAll('[data-delete-section]').forEach(button => button.addEventListener('click', () => deleteSection(button.dataset.deleteSection)));
+    const template = selected();
+    const location = $('#template-location');
+    location.innerHTML = `<option value="">Outside Sections</option>${state.sections.map(section => `<option value="${section.id}">${esc(clean(section.title) || 'Untitled Section')}</option>`).join('')}`;
+    location.value = template?.sectionID || '';
+    location.disabled = !template;
+    $('#move-template').disabled = !template;
+    $('#rename-template').disabled = !template;
+    $('#delete-template').disabled = !template;
+  }
+  function templateRow(template) { return `<button class="template-row ${template.id === state.selectedID ? 'selected' : ''}" data-template="${template.id}" type="button"><i class="template-dot"></i><span>${esc(clean(template.title) || 'Untitled Form')}</span></button>`; }
+  function emptyWorkspace() { return '<div class="content"><div class="empty"><strong>Start a custom form</strong>Use Add in the template sidebar to create your first form.</div></div>'; }
+  function buildWorkspace(template) {
+    const cards = template.elements.length ? template.elements.map(buildElementCard).join('') : '<div class="empty"><strong>No elements yet</strong>Use one of the buttons above to add text, a text field, a checkbox, or radio selections.</div>';
+    return `<div class="content">
+      <div class="builder-toolbar"><section class="form-section"><label class="label" for="form-title">Form Name</label><textarea id="form-title" class="autogrow" rows="1">${esc(template.title)}</textarea><p class="hint">Every text area supports copying, pasting, wrapped text, and new lines.</p></section><section><div class="section-title"><h2>Form Elements</h2></div><p class="hint" style="margin:0 0 12px">Drag an element's ⠿ handle to place it above or below another element.</p><div class="add-row"><button class="button" data-add="text" type="button">＋ Static Text</button><button class="button" data-add="code" type="button">＋ Code</button><button class="button" data-add="textField" type="button">＋ Text Field</button><button class="button" data-add="checkbox" type="button">＋ Checkbox</button><button class="button" data-add="radio" type="button">＋ Radio Selection</button><button class="button" data-add="break" type="button">＋ Break</button></div></section></div>
+      <div id="element-list">${cards}</div>
+    </div>`;
+  }
+  function kindInfo(kind) { return ({ text:['≡', 'Static Text'], code:['</>', 'Code'], textField:['T', 'Text Field'], checkbox:['☑', 'Checkbox'], radio:['◉', 'Radio Selection'], break:['—', 'Break'] })[kind]; }
+  function buildElementCard(element) {
+    const [icon, name] = kindInfo(element.kind);
+    let body = '';
+    if (element.kind === 'text') body = `<label class="label">Text shown on the form</label><textarea class="autogrow" data-element="${element.id}" data-property="label" placeholder="Add your text here">${esc(element.label)}</textarea><label class="export-option field-gap"><input type="checkbox" data-export-static="${element.id}" ${element.exportStaticText ? 'checked' : ''}><span>Include this static text in clipboard export</span></label>`;
+    if (element.kind === 'code') body = `<label class="label">Code shown on the form</label><textarea class="autogrow" data-element="${element.id}" data-property="label" placeholder="Add code here">${esc(element.label)}</textarea><label class="export-option field-gap"><input type="checkbox" data-export-static="${element.id}" ${element.exportStaticText ? 'checked' : ''}><span>Include this code in clipboard export</span></label>`;
+    if (element.kind === 'textField') body = `<label class="label">Field label shown to the person filling out the form</label><textarea class="autogrow" data-element="${element.id}" data-property="label" placeholder="Question or field label">${esc(element.label)}</textarea><div class="field-gap"><label class="export-option"><input type="checkbox" data-text-placeholder-enabled="${element.id}" ${element.useTextFieldPlaceholder ? 'checked' : ''}><span>Show custom placeholder text in Fill Out mode</span></label><label class="label" style="margin-top:10px">Placeholder text</label><textarea class="autogrow" data-text-placeholder="${element.id}" placeholder="Placeholder text shown until the person types">${esc(element.textFieldPlaceholder)}</textarea></div><div class="field-gap"><span class="label">Clipboard export layout</span><label class="radio-option"><input type="radio" name="export-layout-${element.id}" data-export-text-field="${element.id}" value="inline" ${element.textFieldExportStyle === 'inline' ? 'checked' : ''}><span>Field label, then two spaces, then the entered text (blank line after)</span></label><label class="radio-option"><input type="radio" name="export-layout-${element.id}" data-export-text-field="${element.id}" value="inlineNoSpace" ${element.textFieldExportStyle === 'inlineNoSpace' ? 'checked' : ''}><span>Field label, then two spaces, then the entered text (no blank line after)</span></label><label class="radio-option"><input type="radio" name="export-layout-${element.id}" data-export-text-field="${element.id}" value="under" ${!['inline', 'inlineNoSpace'].includes(element.textFieldExportStyle) ? 'checked' : ''}><span>Field label, then the entered text underneath (blank line after)</span></label></div>`;
+    if (element.kind === 'checkbox') {
+      const invalid = !clean(element.label) || !clean(element.selectedOutput);
+      body = `<label class="label">Checkbox label <span class="required">*</span></label><textarea class="autogrow" data-element="${element.id}" data-property="label">${esc(element.label)}</textarea><div class="field-gap"><label class="label">Text to export when selected <span class="required">*</span></label><textarea class="autogrow" data-element="${element.id}" data-property="selectedOutput">${esc(element.selectedOutput)}</textarea></div><label class="export-option field-gap"><input type="checkbox" data-checkbox-space="${element.id}" ${element.checkboxSpaceBelow ? 'checked' : ''}><span>Add a blank line after this checkbox in clipboard export</span></label>${invalid ? '<p class="validation">Both fields are required before this template can be saved.</p>' : ''}`;
+    }
+    if (element.kind === 'radio') {
+      const options = element.options.map((option, index) => `<div class="option-editor"><textarea class="autogrow" data-element="${element.id}" data-option="${index}" placeholder="Radio choice">${esc(option)}</textarea><button class="small-icon" type="button" data-remove-option="${element.id}" data-index="${index}" ${element.options.length === 1 ? 'disabled' : ''}>−</button></div>`).join('');
+      const invalid = !clean(element.label) || !element.options.some(clean);
+      body = `<label class="label">Radio selection label <span class="required">*</span></label><textarea class="autogrow" data-element="${element.id}" data-property="label" placeholder="Radio selection label">${esc(element.label)}</textarea><div class="field-gap"><label class="label">Choices <span class="required">*</span></label>${options}<button class="button" type="button" data-add-option="${element.id}">＋ Add Choice</button></div>${invalid ? '<p class="validation">A label and at least one non-empty choice are required before saving.</p>' : ''}`;
+    }
+    if (element.kind === 'break') body = `<div class="break-settings"><label class="break-setting"><span class="label">Break character</span><input type="text" data-break-character="${element.id}" value="${esc(normalizedBreakCharacter(element.breakCharacter))}" aria-label="Break character"></label><label class="break-setting"><span class="label">Characters (maximum 60)</span><input type="number" min="1" max="60" step="1" data-break-length="${element.id}" value="${normalizedBreakLength(element.breakLength)}" aria-label="Number of break characters"></label></div><div class="field-gap"><span class="label">Clipboard spacing</span><label class="radio-option"><input type="radio" name="break-spacing-${element.id}" data-break-spacing="${element.id}" value="above" ${element.breakSpacing === 'above' ? 'checked' : ''}><span>Add a blank line above the break</span></label><label class="radio-option"><input type="radio" name="break-spacing-${element.id}" data-break-spacing="${element.id}" value="below" ${element.breakSpacing === 'below' ? 'checked' : ''}><span>Add a blank line below the break</span></label><label class="radio-option"><input type="radio" name="break-spacing-${element.id}" data-break-spacing="${element.id}" value="none" ${!['above', 'below'].includes(element.breakSpacing) ? 'checked' : ''}><span>No blank line before or after the break</span></label></div><div class="builder-break">${esc(breakLine(element))}</div>`;
+    return `<article class="element-card" data-element-card="${element.id}"><div class="element-head"><button class="drag-handle" data-drag-handle="${element.id}" draggable="true" type="button" aria-label="Drag to reorder ${name}" title="Drag to reorder">⠿</button><span class="icon">${icon}</span><span class="element-kind">${name}</span><button class="remove" type="button" data-remove-element="${element.id}" aria-label="Remove ${name}">Remove</button></div>${body}</article>`;
+  }
+  function fillWorkspace(template) {
+    return `<div class="content"><h2 style="margin-top:0;font-size:27px;letter-spacing:-.03em">${esc(clean(template.title) || 'Untitled Form')}</h2><div class="top-clear-action"><button id="clear-all" class="button danger" type="button">Clear All</button></div>${template.elements.map(fillElement).join('')}<section class="filler-actions"><label class="export-option"><input id="include-labels" type="checkbox" ${state.includeLabels ? 'checked' : ''}><span>Include field labels and selected-checkbox output text in clipboard export</span></label><div class="action-row"><button id="export-clipboard" class="button primary" type="button">Export to Clipboard</button></div></section></div>`;
+  }
+  function fillElement(element) {
+    const response = state.responses[element.id];
+    if (element.kind === 'text') return `<section class="fill-card static">${esc(element.label)}</section>`;
+    if (element.kind === 'code') return `<section class="fill-card"><div class="code-block"><button class="button copy-code" type="button" data-copy-code="${element.id}">Copy Code</button><pre><code>${esc(element.label)}</code></pre></div></section>`;
+    if (element.kind === 'break') return `<section class="fill-card static"><div class="builder-break">${esc(breakLine(element))}</div></section>`;
+    if (element.kind === 'textField') return `<section class="fill-card">${clean(element.label) ? `<label class="label">${esc(element.label)}</label>` : ''}<textarea class="autogrow" data-fill-text="${element.id}" placeholder="${element.useTextFieldPlaceholder ? esc(element.textFieldPlaceholder) : ''}">${esc(response || '')}</textarea></section>`;
+    if (element.kind === 'checkbox') return `<section class="fill-card"><label class="check-option"><input type="checkbox" data-fill-check="${element.id}" ${response ? 'checked' : ''}><span>${esc(element.label)}</span></label></section>`;
+    const choices = element.options.filter(clean).map(option => `<label class="radio-option"><input type="radio" name="radio-${element.id}" value="${esc(option)}" data-fill-radio="${element.id}" ${response === option ? 'checked' : ''}><span>${esc(option)}</span></label>`).join('');
+    return `<section class="fill-card"><span class="label">${esc(element.label)}</span>${choices}</section>`;
+  }
+  function bindWorkspace() {
+    document.querySelectorAll('.autogrow').forEach(autoGrow);
+    if (state.mode === 'build') {
+      $('#form-title')?.addEventListener('input', e => { selected().title = e.target.value; markDirty(); $('#workspace-title').textContent = clean(e.target.value) || 'Untitled Form'; renderSidebar(); });
+      document.querySelectorAll('[data-add]').forEach(button => button.addEventListener('click', () => { selected().elements.push(defaultElement(button.dataset.add)); markDirty(); render(); }));
+      document.querySelectorAll('[data-property]').forEach(field => field.addEventListener('input', e => { const element = getElement(e.target.dataset.element); element[e.target.dataset.property] = e.target.value; markDirty(); }));
+      document.querySelectorAll('[data-export-static]').forEach(field => field.addEventListener('change', e => { getElement(e.target.dataset.exportStatic).exportStaticText = e.target.checked; markDirty(); }));
+      document.querySelectorAll('[data-checkbox-space]').forEach(field => field.addEventListener('change', e => { getElement(e.target.dataset.checkboxSpace).checkboxSpaceBelow = e.target.checked; markDirty(); }));
+      document.querySelectorAll('[data-export-text-field]').forEach(field => field.addEventListener('change', e => { getElement(e.target.dataset.exportTextField).textFieldExportStyle = e.target.value; markDirty(); }));
+      document.querySelectorAll('[data-text-placeholder-enabled]').forEach(field => field.addEventListener('change', e => { getElement(e.target.dataset.textPlaceholderEnabled).useTextFieldPlaceholder = e.target.checked; markDirty(); }));
+      document.querySelectorAll('[data-text-placeholder]').forEach(field => field.addEventListener('input', e => { getElement(e.target.dataset.textPlaceholder).textFieldPlaceholder = e.target.value; markDirty(); }));
+      document.querySelectorAll('[data-break-character]').forEach(field => {
+        const selectCurrentCharacter = event => event.target.select();
+        field.addEventListener('focus', selectCurrentCharacter);
+        field.addEventListener('click', selectCurrentCharacter);
+        field.addEventListener('input', e => { const element = getElement(e.target.dataset.breakCharacter); element.breakCharacter = normalizedBreakCharacter(Array.from(e.target.value).at(-1)); e.target.value = element.breakCharacter; markDirty(); });
+      });
+      document.querySelectorAll('[data-break-length]').forEach(field => field.addEventListener('change', e => { const element = getElement(e.target.dataset.breakLength); element.breakLength = normalizedBreakLength(e.target.value); e.target.value = element.breakLength; markDirty(); }));
+      document.querySelectorAll('[data-break-spacing]').forEach(field => field.addEventListener('change', e => { getElement(e.target.dataset.breakSpacing).breakSpacing = e.target.value; markDirty(); }));
+      document.querySelectorAll('[data-option]').forEach(field => field.addEventListener('input', e => { const element = getElement(e.target.dataset.element); element.options[Number(e.target.dataset.option)] = e.target.value; markDirty(); }));
+      document.querySelectorAll('[data-remove-element]').forEach(button => button.addEventListener('click', () => { selected().elements = selected().elements.filter(e => e.id !== button.dataset.removeElement); markDirty(); render(); }));
+      document.querySelectorAll('[data-add-option]').forEach(button => button.addEventListener('click', () => { getElement(button.dataset.addOption).options.push(''); markDirty(); render(); }));
+      document.querySelectorAll('[data-remove-option]').forEach(button => button.addEventListener('click', () => { getElement(button.dataset.removeOption).options.splice(Number(button.dataset.index), 1); markDirty(); render(); }));
+      bindElementReordering();
+    } else {
+      $('#include-labels')?.addEventListener('change', e => { state.includeLabels = e.target.checked; });
+      document.querySelectorAll('[data-copy-code]').forEach(button => button.addEventListener('click', () => copyCode(button.dataset.copyCode)));
+      document.querySelectorAll('[data-fill-text]').forEach(field => field.addEventListener('input', e => { state.responses[e.target.dataset.fillText] = e.target.value; }));
+      document.querySelectorAll('[data-fill-check]').forEach(field => field.addEventListener('change', e => { state.responses[e.target.dataset.fillCheck] = e.target.checked; }));
+      document.querySelectorAll('[data-fill-radio]').forEach(field => field.addEventListener('change', e => { state.responses[e.target.dataset.fillRadio] = e.target.value; }));
+      $('#export-clipboard')?.addEventListener('click', exportClipboard);
+      $('#clear-all')?.addEventListener('click', () => { state.responses = {}; render(); showStatus('All entered fields were cleared.'); });
+    }
+  }
+  function getElement(elementID) { return selected().elements.find(e => e.id === elementID); }
+  function bindElementReordering() {
+    document.querySelectorAll('[data-drag-handle]').forEach(handle => {
+      handle.addEventListener('dragstart', event => {
+        draggingElementID = handle.dataset.dragHandle;
+        handle.closest('[data-element-card]').classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', draggingElementID);
+      });
+      handle.addEventListener('dragend', () => {
+        draggingElementID = null;
+        document.querySelectorAll('[data-element-card]').forEach(card => card.classList.remove('dragging', 'drag-over'));
+      });
+    });
+    document.querySelectorAll('[data-element-card]').forEach(card => {
+      card.addEventListener('dragover', event => {
+        if (!draggingElementID || draggingElementID === card.dataset.elementCard) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        card.classList.add('drag-over');
+      });
+      card.addEventListener('drop', event => {
+        event.preventDefault();
+        const sourceID = draggingElementID || event.dataTransfer.getData('text/plain');
+        moveElement(sourceID, card.dataset.elementCard, event.clientY > card.getBoundingClientRect().top + card.getBoundingClientRect().height / 2);
+      });
+    });
+  }
+  function moveElement(sourceID, targetID, placeAfter) {
+    if (!sourceID || sourceID === targetID) return;
+    const elements = selected().elements;
+    const sourceIndex = elements.findIndex(element => element.id === sourceID);
+    const targetIndex = elements.findIndex(element => element.id === targetID);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+    const [moved] = elements.splice(sourceIndex, 1);
+    let destinationIndex = targetIndex + (placeAfter ? 1 : 0);
+    if (sourceIndex < destinationIndex) destinationIndex -= 1;
+    elements.splice(destinationIndex, 0, moved);
+    markDirty();
+    render();
+    showStatus('Element order updated. Save the template when ready.');
+  }
+  function autoGrow(textarea) { const resize = () => { textarea.style.height = 'auto'; textarea.style.height = `${Math.max(46, textarea.scrollHeight)}px`; }; textarea.addEventListener('input', resize); resize(); }
+  function nativeBridge() { return window.webkit?.messageHandlers?.customForm || null; }
+  function selectedTemplateDocument() {
+    const template = selected();
+    const section = state.sections.find(item => item.id === template.sectionID);
+    return { documentType: 'customFormTemplate', schemaVersion: 2, sections: section ? [section] : [], templates: [template] };
+  }
+  function fullWorkspaceDocument() { return { documentType: 'customFormWorkspace', selectedTemplateID: state.selectedID, ...workspaceData() }; }
+  function downloadSelectedTemplate() {
+    const template = selected();
+    const payload = JSON.stringify(selectedTemplateDocument(), null, 2);
+    const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
+    const link = document.createElement('a'); link.href = url; link.download = `${clean(template.title) || 'custom-form-template'}.json`; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+    showStatus('Template JSON was downloaded. Keep it somewhere secure so you can import it later.');
+  }
+  function saveCurrent() {
+    const template = selected(); if (!template) return;
+    const problem = validTemplate(template); if (problem) { showStatus(problem, true); return; }
+    template.modifiedAt = new Date().toISOString();
+    if (!persist()) return;
+    const bridge = nativeBridge();
+    if (!bridge) { downloadSelectedTemplate(); return; }
+    bridge.postMessage(JSON.stringify({ action: 'saveTemplate', name: template.title, payload: JSON.stringify(selectedTemplateDocument(), null, 2) }));
+    showStatus('Saving template JSON to the Custom Form Saved Templates folder…');
+  }
+  function saveAll() {
+    const invalidTemplate = state.templates.find(template => validTemplate(template));
+    if (invalidTemplate) { showStatus(`Cannot save all: ${validTemplate(invalidTemplate)}`, true); return; }
+    if (!persist()) return;
+    const payload = JSON.stringify(fullWorkspaceDocument(), null, 2);
+    const bridge = nativeBridge();
+    if (!bridge) {
+      const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
+      const link = document.createElement('a'); link.href = url; link.download = 'custom-form-workspace.json'; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+      showStatus('Full workspace JSON was downloaded. Keep it somewhere secure so you can restore it later.');
+      return;
+    }
+    bridge.postMessage(JSON.stringify({ action: 'saveWorkspace', name: 'Custom Form Workspace', payload }));
+    showStatus('Saving all sections and templates to the Custom Form Saved Templates folder…');
+  }
+  function nativeSaveCompleted(result) { showStatus(result?.success ? `Saved template JSON: ${result.path}` : `Unable to save template JSON: ${result?.message || 'Unknown error'}`, !result?.success); }
+  function loadFromNative() {
+    const bridge = nativeBridge();
+    if (!bridge) { $('#import-file').click(); return; }
+    bridge.postMessage(JSON.stringify({ action: 'loadTemplate' }));
+  }
+  async function exportClipboard() {
+    const template = selected();
+    const lines = template.elements.flatMap(element => {
+      const response = state.responses[element.id];
+      if (element.kind === 'break') {
+        const line = breakLine(element);
+        if (element.breakSpacing === 'above') return [`\n${line}`];
+        if (element.breakSpacing === 'below') return [`${line}\n`];
+        return [line];
+      }
+      if (element.kind === 'text' || element.kind === 'code') return element.exportStaticText && clean(element.label) ? [`${clean(element.label)}\n`] : [];
+      if (!response) return [];
+      if (element.kind === 'checkbox') {
+        const value = state.includeLabels ? `${clean(element.label)}: ${clean(element.selectedOutput)}` : clean(element.selectedOutput);
+        return [element.checkboxSpaceBelow ? `${value}\n` : value];
+      }
+      const value = clean(response); if (!value) return [];
+      if (!state.includeLabels || !clean(element.label)) return [`${value}\n`];
+      if (element.textFieldExportStyle === 'inline') return [`${clean(element.label)}  ${value}\n`];
+      if (element.textFieldExportStyle === 'inlineNoSpace') return [`${clean(element.label)}  ${value}`];
+      return [`${clean(element.label)}\n${value}\n`];
+    });
+    if (!lines.length) { showStatus('There is no filled-out information to export yet.', true); return; }
+    const text = lines.join('\n');
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text); else legacyCopy(text);
+      showStatus(`Copied ${lines.length} item${lines.length === 1 ? '' : 's'} to the clipboard.`);
+    } catch (_) { legacyCopy(text); showStatus(`Copied ${lines.length} item${lines.length === 1 ? '' : 's'} to the clipboard.`); }
+  }
+  async function copyCode(elementID) {
+    const element = selected().elements.find(item => item.id === elementID);
+    if (!element) return;
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(element.label); else legacyCopy(element.label);
+      showStatus('Code copied to the clipboard.');
+    } catch (_) { legacyCopy(element.label); showStatus('Code copied to the clipboard.'); }
+  }
+  function legacyCopy(text) { const area = document.createElement('textarea'); area.value = text; area.style.position = 'fixed'; area.style.opacity = '0'; document.body.append(area); area.select(); document.execCommand('copy'); area.remove(); }
+  function addTemplate() { const template = defaultTemplate(); state.templates.push(template); state.selectedID = template.id; state.responses = {}; markDirty(); render(); }
+  function addSection() { const section = defaultSection(); state.sections.push(section); markDirty(); render(); showStatus(`Added ${section.title}. Use the pencil to rename it.`); }
+  function renameTemplate() {
+    const template = selected(); if (!template) return;
+    const title = prompt('Rename template', template.title); if (title === null) return;
+    if (!clean(title)) { showStatus('A template name cannot be empty.', true); return; }
+    template.title = title; template.modifiedAt = new Date().toISOString(); markDirty(); render();
+  }
+  function renameSection(sectionID) {
+    const section = state.sections.find(item => item.id === sectionID); if (!section) return;
+    const title = prompt('Rename section', section.title); if (title === null) return;
+    if (!clean(title)) { showStatus('A section name cannot be empty.', true); return; }
+    section.title = title; markDirty(); render();
+  }
+  function deleteTemplate() { const template = selected(); if (!template) return; if (!confirm(`Delete “${clean(template.title) || 'Untitled Form'}”?`)) return; state.templates = state.templates.filter(t => t.id !== template.id); state.selectedID = state.templates[0]?.id || null; state.responses = {}; markDirty(); render(); }
+  function deleteSection(sectionID) {
+    const section = state.sections.find(item => item.id === sectionID); if (!section) return;
+    const nestedCount = state.templates.filter(template => template.sectionID === sectionID).length;
+    if (!confirm(`Delete “${clean(section.title) || 'Untitled Section'}”? ${nestedCount ? `${nestedCount} template${nestedCount === 1 ? '' : 's'} will be moved outside sections.` : ''}`)) return;
+    state.templates.forEach(template => { if (template.sectionID === sectionID) template.sectionID = null; });
+    state.sections = state.sections.filter(item => item.id !== sectionID); markDirty(); render();
+  }
+  function moveSelectedTemplate() {
+    const template = selected(); if (!template) return;
+    const destination = $('#template-location').value;
+    template.sectionID = state.sections.some(section => section.id === destination) ? destination : null;
+    template.modifiedAt = new Date().toISOString(); markDirty(); render();
+    showStatus(template.sectionID ? 'Template moved into its section.' : 'Template moved outside sections.');
+  }
+  function downloadTemplates() { const payload = JSON.stringify(workspaceData(), null, 2); const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' })); const link = document.createElement('a'); link.href = url; link.download = 'custom-form-templates.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 500); showStatus('Template and section export was created.'); }
+  function importTemplateData(rawData) {
+    try {
+      const incoming = decodeWorkspace(typeof rawData === 'string' ? JSON.parse(rawData) : rawData);
+      if (!incoming.templates.length && !incoming.sections.length) throw new Error('The file does not contain templates or sections.');
+      const templateIDs = new Set(state.templates.map(template => template.id));
+      const sectionIDs = new Set(state.sections.map(section => section.id));
+      const sectionIDMap = new Map();
+      const importedSections = incoming.sections.map(section => { const originalID = section.id; if (sectionIDs.has(section.id)) section.id = id(); sectionIDs.add(section.id); sectionIDMap.set(originalID, section.id); return section; });
+      const importedTemplates = incoming.templates.map(template => { if (templateIDs.has(template.id)) template.id = id(); templateIDs.add(template.id); template.sectionID = sectionIDMap.get(template.sectionID) || null; return template; });
+      state.sections.push(...importedSections); state.templates.push(...importedTemplates); state.selectedID = importedTemplates.at(-1)?.id || state.selectedID;
+      markDirty(); persist(); $('#settings-dialog').close(); render();
+      showStatus(`${importedTemplates.length} template${importedTemplates.length === 1 ? '' : 's'} and ${importedSections.length} section${importedSections.length === 1 ? '' : 's'} imported and saved.`);
+    } catch (error) { showStatus(`Unable to load templates: ${error.message}`, true); }
+  }
+  function importTemplates(file) { const reader = new FileReader(); reader.onload = () => importTemplateData(reader.result); reader.readAsText(file); }
+  function nativeLoadCompleted(rawData) {
+    try {
+      const payload = JSON.parse(rawData);
+      if (payload.documentType !== 'customFormWorkspace') { importTemplateData(payload); return; }
+      const restored = decodeWorkspace(payload);
+      state.sections = restored.sections; state.templates = restored.templates; state.selectedID = restored.templates.some(template => template.id === payload.selectedTemplateID) ? payload.selectedTemplateID : restored.templates[0]?.id || null; state.responses = {};
+      persist(); render();
+      showStatus('Restored all sections and templates from the saved workspace.');
+    } catch (error) { showStatus(`Unable to load workspace: ${error.message}`, true); }
+  }
+  function nativeLoadCancelled() { showStatus('Template loading was cancelled.'); }
+  function nativeLoadFailed(message) { showStatus(`Unable to load template: ${message}`, true); }
+  window.nativeSaveCompleted = nativeSaveCompleted;
+  window.nativeLoadCompleted = nativeLoadCompleted;
+  window.nativeLoadCancelled = nativeLoadCancelled;
+  window.nativeLoadFailed = nativeLoadFailed;
+  $('#new-template').addEventListener('click', addTemplate);
+  $('#new-section').addEventListener('click', addSection);
+  $('#rename-template').addEventListener('click', renameTemplate);
+  $('#delete-template').addEventListener('click', deleteTemplate);
+  $('#move-template').addEventListener('click', moveSelectedTemplate);
+  $('#build-mode').addEventListener('click', () => setMode('build'));
+  $('#fill-mode').addEventListener('click', () => setMode('fill'));
+  $('#save-button').addEventListener('click', saveCurrent);
+  $('#save-all-button').addEventListener('click', saveAll);
+  $('#load-button').addEventListener('click', loadFromNative);
+  $('#settings-button').addEventListener('click', () => $('#settings-dialog').showModal());
+  $('#settings-done').addEventListener('click', () => $('#settings-dialog').close());
+  $('#settings-save').addEventListener('click', () => { saveCurrent(); $('#settings-dialog').close(); });
+  $('#settings-export').addEventListener('click', downloadTemplates);
+  $('#settings-import').addEventListener('click', loadFromNative);
+  $('#import-file').addEventListener('change', e => { if (e.target.files[0]) importTemplates(e.target.files[0]); e.target.value = ''; });
+  $('#mobile-menu').addEventListener('click', () => setMobileSidebar(!sidebar.classList.contains('mobile-open')));
+  $('#sidebar-scrim').addEventListener('click', () => setMobileSidebar(false));
+  window.addEventListener('resize', () => { if (!isMobileLayout()) setMobileSidebar(false); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMobileSidebar(); });
+  load(); render();
+})();
+</script>
+</body>
+</html>
