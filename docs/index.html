@@ -442,9 +442,19 @@
     showStatus('Saving all sections and templates to the Custom Form Saved Templates folder…');
   }
   function nativeSaveCompleted(result) { showStatus(result?.success ? `Saved template JSON: ${result.path}` : `Unable to save template JSON: ${result?.message || 'Unknown error'}`, !result?.success); }
-  function loadFromNative() {
+  async function loadFromNative() {
     const bridge = nativeBridge();
-    if (!bridge) { $('#import-file').click(); return; }
+    if (!bridge) {
+      try {
+        showStatus('Loading the shared workspace…');
+        const response = await fetch('./json/custom-form-workspace-2.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`The shared workspace could not be loaded (${response.status}).`);
+        nativeLoadCompleted(await response.text());
+      } catch (error) {
+        showStatus(`Unable to load the shared workspace: ${error.message}`, true);
+      }
+      return;
+    }
     bridge.postMessage(JSON.stringify({ action: 'loadTemplate' }));
   }
   async function exportClipboard() {
