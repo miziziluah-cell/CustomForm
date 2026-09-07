@@ -1,6 +1,6 @@
 {
   "documentType": "customFormWorkspace",
-  "selectedTemplateID": "d2cc62ea-eed3-4d4a-8fec-68d05c9e339a",
+  "selectedTemplateID": "dbd2e085-b989-4b0a-9b95-4e4139ccb9df",
   "schemaVersion": 2,
   "sections": [
     {
@@ -711,6 +711,202 @@
         }
       ],
       "modifiedAt": "2026-09-07T07:02:13.659Z"
+    },
+    {
+      "id": "dbd2e085-b989-4b0a-9b95-4e4139ccb9df",
+      "title": "CT 2PV",
+      "sectionID": "1a5796a0-a3d8-458b-8bb4-98a1e2a51ed3",
+      "elements": [
+        {
+          "id": "035d3657-7364-4a3c-882e-8e4bb212f321",
+          "kind": "text",
+          "label": "*CT 2PV*",
+          "selectedOutput": "",
+          "options": [],
+          "exportStaticText": true,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "under",
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "35112483-12b7-4700-ba39-e050318ecc53",
+          "kind": "text",
+          "label": "*Failed CT*",
+          "selectedOutput": "",
+          "options": [],
+          "exportStaticText": true,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "under",
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "daa2e6cf-22fd-4368-b9c2-fb78a1378b54",
+          "kind": "textField",
+          "label": "*Failed CT Serial#*",
+          "selectedOutput": "",
+          "options": [],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "inline",
+          "textFieldPlaceholder": "",
+          "useTextFieldPlaceholder": false,
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "f785da9c-131e-4ae4-ad02-13fe3f3e595d",
+          "kind": "textField",
+          "label": "*Per GPUPR Ticket# :*",
+          "selectedOutput": "",
+          "options": [],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "inlineNoSpace",
+          "textFieldPlaceholder": "",
+          "useTextFieldPlaceholder": false,
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "40e315a5-1ee5-4514-a0df-0b7726515c8b",
+          "kind": "radio",
+          "label": "* Wipe Validation Clear (Pass or Fail):",
+          "selectedOutput": "",
+          "options": [
+            "Passed",
+            "Failed"
+          ],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "under",
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "88969bbc-d3bb-4615-812e-43f69b8f862d",
+          "kind": "radio",
+          "label": "* BF3 Clear (Pass or Fail):",
+          "selectedOutput": "",
+          "options": [
+            "Passed",
+            "Failed"
+          ],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "under",
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "261ac68e-88f8-423b-a022-08817e152ed5",
+          "kind": "radio",
+          "label": "* TPM Clear (Pass or Fail):",
+          "selectedOutput": "",
+          "options": [
+            "Passed",
+            "Failed"
+          ],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "under",
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "f977db46-46e1-49c2-8b07-2e98e934a5d9",
+          "kind": "textField",
+          "label": "*Failed CT left in shelf location:*",
+          "selectedOutput": "",
+          "options": [],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "inline",
+          "textFieldPlaceholder": "",
+          "useTextFieldPlaceholder": false,
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "e08b5a53-d93c-42c3-a5e2-37307a3877f6",
+          "kind": "break",
+          "label": "",
+          "selectedOutput": "",
+          "options": [],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "under",
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "below"
+        },
+        {
+          "id": "6612a469-21e1-49f8-9b24-f4fb4e307c27",
+          "kind": "text",
+          "label": "*Replacement CT*",
+          "selectedOutput": "",
+          "options": [],
+          "exportStaticText": true,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "under",
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "287c304e-08b2-4502-a504-7f8eda8c2593",
+          "kind": "textField",
+          "label": "*Replacement CT Serial#*",
+          "selectedOutput": "",
+          "options": [],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "inline",
+          "textFieldPlaceholder": "",
+          "useTextFieldPlaceholder": false,
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "4b3b1ed1-05bb-460d-bc71-f22df1cfcac4",
+          "kind": "checkbox",
+          "label": "*I verified that the cabling was correct at the Replacement CT:*",
+          "selectedOutput": "Confirmed by tech",
+          "options": [],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": true,
+          "textFieldExportStyle": "under",
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        },
+        {
+          "id": "178e4b99-9276-49a1-869b-3796d7e882ef",
+          "kind": "textField",
+          "label": "*Left in Cab location*",
+          "selectedOutput": "",
+          "options": [],
+          "exportStaticText": false,
+          "checkboxSpaceBelow": false,
+          "textFieldExportStyle": "inlineNoSpace",
+          "textFieldPlaceholder": "",
+          "useTextFieldPlaceholder": false,
+          "breakCharacter": "=",
+          "breakLength": 40,
+          "breakSpacing": "none"
+        }
+      ],
+      "modifiedAt": "2026-09-07T10:27:46.812Z"
     }
   ]
 }
