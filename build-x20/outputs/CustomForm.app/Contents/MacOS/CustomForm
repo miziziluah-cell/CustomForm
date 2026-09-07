@@ -1,0 +1,6 @@
+#!/bin/zsh
+
+# A deliberately local launcher: the complete interface runs in a built-in
+# WebKit window. No web server, Node.js, account, or download is used.
+app_root="${0:A:h:h}"
+exec env CUSTOMFORM_APP_ROOT="$app_root" /usr/bin/osascript -l JavaScript "$app_root/Resources/CustomFormApp.js"
